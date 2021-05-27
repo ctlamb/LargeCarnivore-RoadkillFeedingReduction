@@ -1,0 +1,9 @@
+Deployment Info,pit_name,location,make,deployed,removed,spatloc (address),spatloc (latitude),spatloc (longitude),spatloc,type
+,Olsen,OLSENPITCORNER,Ridgetec Lookout 4G,09/23/2017 12:25 PM,11/05/2017 12:25 PM,"Sparwood, East Kootenay BC, Canada",49.648390,-114.916481,"Sparwood, East Kootenay BC, Canada [49.648390,-114.916481]",Trail
+,Olsen,OLSENTRAIL,Ridgetec Lookout 4G,08/25/2018 12:18 PM,09/11/2018 9:25 AM,"Sparwood, East Kootenay BC, Canada",49.648153,-114.917135,"Sparwood, East Kootenay BC, Canada [49.648153,-114.917135]",Trail
+,Olsen,OLSENFORESTWEST,Bushnell Trophy Cam old,06/15/2017 12:13 PM,08/20/2017 12:13 PM,"Sparwood, East Kootenay BC, Canada",49.648097,-114.917277,"Sparwood, East Kootenay BC, Canada [49.648097,-114.917277]",Trail
+,Olsen,OLSENMAIN2018,Ridgetec Lookout 4G,03/20/2018 12:13 PM,09/15/2018 12:13 PM,"1211 Riverside Way, Fernie BC V0B 1M7, Canada",49.485386,-115.075881,"1211 Riverside Way, Fernie BC V0B 1M7, Canada [49.485386,-115.075881]",Pit
+,Olsen,OLSENMAIN2017,Bushnell Trophy Cam new,09/08/2017 12:13 PM,09/10/2017 12:13 PM,"1211 Riverside Way, Fernie BC V0B 1M7, Canada",49.485386,-115.075881,"1211 Riverside Way, Fernie BC V0B 1M7, Canada [49.485386,-115.075881]",Pit
+,Olsen,OLSENROAD,Ridgetec Lookout 4G,06/07/2018 12:18 PM,06/14/2018 12:18 PM,"Sparwood, East Kootenay BC, Canada",49.647555,-114.917669,"Sparwood, East Kootenay BC, Canada [49.647555,-114.917669]",Road
+,Tunnel,TUNNEL,Bushnell Trophy Cam new,09/12/2018 12:34 PM,09/20/2018 12:34 PM,"1214 Riverside Way, Fernie BC V0B 1M7, Canada",49.485383,-115.075861,"1214 Riverside Way, Fernie BC V0B 1M7, Canada [49.485383,-115.075861]",Pit
+,Alex,ALEX,Reconynx Hyperfire 2,01/28/2021 10:27 AM,05/20/2021 8:27 PM,"Highway 3, Sparwood BC, Canada",49.660324,-114.736950,"Highway 3, Sparwood BC, Canada [49.660324,-114.736950]",Bunker
