@@ -517,7 +517,7 @@ ggplot(body.cond%>%distinct(id,group,.keep_all=TRUE), aes(x=group, fill=sex))+
 
 ```
 ## Highway crossings before/after
-```{r body condition, message=FALSE, warning=FALSE}
+```{r crossings, message=FALSE, warning=FALSE}
 # A helper function that erases all of y from x:
 st_erase = function(x, y) st_difference(x, st_union(st_combine(y)))
 
@@ -525,16 +525,16 @@ hwy <- st_read(here::here("data","spatial","ev_hwy.shp"))%>%
   st_transform(st_crs(ev.grizz))
 hwy_split <- st_read(here::here("data","spatial","ev_hwy_extend.shp"))%>%
   st_transform(st_crs(ev.grizz))
-mapview(st_bbox(ev.grizz))+mapview(hwy_split)
+#mapview(st_bbox(ev.grizz))+mapview(hwy_split)
 
 ##split to zones to ID crossings
 zones <- st_erase(st_bbox(ev.grizz)%>%st_as_sfc(), hwy_split%>%st_buffer(20)%>%summarise)%>%st_cast("POLYGON")%>%st_sf%>%mutate(zone=1:4)
 
-mapview(zones)
+#mapview(zones)
 
 zone.rast <- st_rasterize(zones["zone"], dx = 30, dy = 30)%>%as("Raster")
 values(zone.rast)[is.na(values(zone.rast))] <- 4
-mapview(zone.rast)
+#mapview(zone.rast)
 
 
 ##extract to grizz dat
@@ -569,7 +569,7 @@ track_lines <- track_lines%>%
   ungroup%>%
   filter(st_length(track_lines%>%ungroup%>%pull(line))%>%as.numeric()<10000)
 
-mapview(zone.rast)+mapview(track_lines%>%filter(!dif%in%0)%>%pull(line))
+#mapview(zone.rast)+mapview(track_lines%>%filter(!dif%in%0)%>%pull(line))
 
 ##intersect w/ highway
 track_lines <- track_lines%>%
@@ -578,8 +578,8 @@ track_lines <- track_lines%>%
                            TRUE~0))
 
 
-mapview(track_lines%>%filter(crossed%in%1)%>%pull(line))
-mapview(track_lines%>%filter(crossed%in%0)%>%pull(line))
+#mapview(track_lines%>%filter(crossed%in%1)%>%pull(line))
+#mapview(track_lines%>%filter(crossed%in%0)%>%pull(line))
 
 
 ##how far in a day?
