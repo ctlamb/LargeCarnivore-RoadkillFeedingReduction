@@ -1,0 +1,24 @@
+column_name,description_english
+age_class,Age group classification of the individual detected
+common_name,Name by which a species is known to the general public
+date_detected,Timestamp (date and time) on the image
+field_of_view,Used to define the observation period and sampling effort 
+id_by,The user who tagged the image
+image_comments,A comment that applies to all the tags within an image
+number_individuals,Number of individuals visible in the image
+sex,Sex of individual detected based on physical characteristics 
+species_rank,Resolution to which organism was identified
+tag_comments,Comments specific to a single tag within an image
+latitude,Latitude
+location,The physical place on the landscape where the data was collected
+location_buffer_radius_m,Radius of the buffer around the location (in meters)
+longitude,Longitude
+organization,Organization acronym; the organization that the data belongs to
+project,Full name of the project; a project is the aggregation of media processed to answer a specific scientific question or implement a study design
+project_status,"The status of the project (Active, Test, Private, Map, Map + Report, Published)"
+scientific_name,"Binomial classification (Genus, species) of the species"
+species_class,Species class (taxonomic rank)
+species_english_name,English common name of the species
+species_french_name,French common name of the species
+location_*,"If split location is checked, the name will be split into new columns ..1, ..2, etc."
+species_comment,A comment about the species tag

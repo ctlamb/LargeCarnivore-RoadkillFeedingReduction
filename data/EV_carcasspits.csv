@@ -1,12 +1,12 @@
 ﻿pit_name,type,users,lat,long,date active,date inactive,comments
 Olsen,uncontrolled,highways,49.648009,-114.91542,,15-Aug-18,
-Fir,uncontrolled,highways/hunters,49.671132,-114.784515,15-Aug-18,-,
-Tunnel,uncontrolled,highways,49.343031,-115.014822,15-Aug-18,01-Jan-19,
-Brule,uncontrolled,highways/hunters,49.887344,-114.91313,,,
+Fir,uncontrolled,highways/hunters,49.671132,-114.784515,,01-Jan-19,
+Tunnel,uncontrolled,highways,49.343031,-115.014822,,01-Jan-19,
+Brule,uncontrolled,highways/hunters,49.887344,-114.91313,,01-Jan-19,
 Minkfarm,uncontrolled,agricultrure,49.859859,-114.904774,,01-Jan-19,
 Hosmer,uncontrolled,hunters,49.606113,-114.945511,,,
 Sparwood,uncontrolled,hunters,49.684244,-114.889019,,,
 Jaffray,uncontrolled,highways/hunters,49.39185,-115.325384,,,
-Hosmer2,uncontrolled,hunter/butcher,49.60651,-114.93444,,,not verified
+Hosmer2,uncontrolled,butcher,49.60651,-114.93444,,,
 Alex,controlled,highways,49.66030812,-114.7369347,15-Aug-19,,
 Elko,controlled,highways,49.28195477,-115.1708575,15-Mar-21,,
