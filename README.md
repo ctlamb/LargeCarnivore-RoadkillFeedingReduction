@@ -1,7 +1,7 @@
 Roadkill Carcass Attraction of Large Carnivores and Solutions
 ================
 Clayton Lamb
-30 May, 2021
+31 May, 2021
 
 \#\#\#\#\#WATCH FOR BEFORE AFTER COMPARISONS THAT ARE MORESO ELKO VS
 ALEX, NOT AS MUCH ELKO BEFORE/AFTER
@@ -162,6 +162,7 @@ tif%>%
   mutate(min_days=n/(as.numeric(dur)))%>%
   group_by(type, common_name)%>%
   summarise(min_days=mean(min_days))%>%
+  #summarise(min_days=sum(n)/sum(dur%>%as.numeric()))%>% 
   filter(type%in%c("Bunker","Pit"))%>%
   ggplot(aes(x=type,y=min_days,fill=common_name))+
   geom_col()+
@@ -415,6 +416,16 @@ df.uncont%>%
   mutate(lower=case_when(mean-se>0.05~mean-se, TRUE~0.05))%>%
   ungroup%>%
   ggplot(aes(x=fct_relevel(period,"Before", "After"),y=log(mean), group=group))+
+      # Shade area under y_lim
+  geom_rect(aes(xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = 0),
+            alpha = 1/8,
+            fill = "forestgreen") +
+  # Shade area above y_lim
+  geom_rect(aes(xmin = -Inf, xmax = Inf, ymin = 0, ymax = Inf),
+            alpha = 1/8,
+            fill = "red")+
+  annotate("text", x = "After", y = 0.2, label = "Select", hjust = -0.35)+
+  annotate("text", x = "After", y = -0.2, label = "Avoid", hjust = -0.45)+
   geom_linerange(aes(ymin=log(lower), ymax=log(mean+se)))+
   geom_point()+
   geom_line(linetype="dashed")+
@@ -463,20 +474,8 @@ cap%>%
          fat.dif=fat_After-fat_Before,
          wt.dif.perc=(wt_After-wt_Before)/wt_Before,
          fat.dif.perc=(fat_After-fat_Before)/fat_Before)
-```
-
-    ## # A tibble: 6 x 9
-    ## # Groups:   Capture ID [6]
-    ##   `Capture ID` wt_After wt_Before fat_After fat_Before wt.dif fat.dif wt.dif.perc fat.dif.perc
-    ##   <chr>           <dbl>     <dbl>     <dbl>      <dbl>  <dbl>   <dbl>       <dbl>        <dbl>
-    ## 1 Cali             NaN      145       NaN         32.6  NaN    NaN       NaN           NaN    
-    ## 2 Chandler         211      268        25.8      NaN    -57    NaN        -0.213       NaN    
-    ## 3 Gums             176      198        16.2       23.9  -22     -7.74     -0.111        -0.323
-    ## 4 Jerry             NA      185        NA         26.2   NA     NA        NA            NA    
-    ## 5 Kathy            123.     114        29.9       20.4    8.7    9.49      0.0763        0.465
-    ## 6 Monica            NA       77.5      NA        NaN     NA     NA        NA            NA
-
-``` r
+        
+        
 body.cond <- cap%>%
   mutate(group=case_when(`Capture ID`%in% (df.uncont%>%filter(year<2019)%>%pull(id)) &
            year(`Date and Time`)<2019 ~"Pits",
@@ -492,18 +491,7 @@ body.cond%>%
   group_by(group,sex)%>%
   summarise(wt=mean(wt, na.rm=TRUE),
             fat=mean(fat, na.rm=TRUE))
-```
 
-    ## # A tibble: 4 x 4
-    ## # Groups:   group [2]
-    ##   group   sex      wt   fat
-    ##   <chr>   <chr> <dbl> <dbl>
-    ## 1 No Pits F      111.  22.9
-    ## 2 No Pits M      166   26.2
-    ## 3 Pits    F      118.  25.2
-    ## 4 Pits    M      171.  24.3
-
-``` r
 ggplot(body.cond, aes(x=age,y=wt, color=sex))+
   geom_point()+
       theme_ipsum()+
@@ -735,14 +723,8 @@ track_lines%>%
   summarise(dist=sum(dist))%>%
   ungroup%>%
   summarise(dist=mean(dist))
-```
+  
 
-    ## # A tibble: 1 x 1
-    ##    dist
-    ##   <dbl>
-    ## 1 4589.
-
-``` r
 track_lines%>%
   tibble()%>%
   dplyr::select(id,id_yr,crossed)%>%
@@ -756,6 +738,7 @@ track_lines%>%
     summarise(crossing.prop=mean(crossing),
               se=sd(crossing)/sqrt(n()))%>%
   ggplot(aes(x=fct_relevel(period,"Before", "After"),y=crossing.prop, group=pit))+
+
   geom_linerange(aes(ymin=crossing.prop-se, ymax=crossing.prop+se))+
   geom_point()+
   geom_line(linetype="dashed")+
@@ -770,3 +753,203 @@ track_lines%>%
 ```
 
 ![](README_files/figure-gfm/crossings-1.png)<!-- -->
+
+## Conflicts before/after
+
+``` r
+library(readxl)
+conf <- read_excel("/Users/clayton.lamb/Google Drive/Documents/University/U_A/Analyses/BC_Wide_PhD/Prov_Grizz_density_oSCR/Grizzly-Density-BC/Data_Prep/Data/conflict/BearHWCRs_2003to2021_Lamb.xlsx", sheet="2015-16")%>%
+  dplyr::select(Area,District,City,IncidentDateTime,NatureOfComplaint,Species_1)%>%
+  rbind(read_excel("/Users/clayton.lamb/Google Drive/Documents/University/U_A/Analyses/BC_Wide_PhD/Prov_Grizz_density_oSCR/Grizzly-Density-BC/Data_Prep/Data/conflict/BearHWCRs_2003to2021_Lamb.xlsx", sheet="2016-17")%>%
+  dplyr::select(Area,District,City,IncidentDateTime,NatureOfComplaint,Species_1))%>%
+  rbind(read_excel("/Users/clayton.lamb/Google Drive/Documents/University/U_A/Analyses/BC_Wide_PhD/Prov_Grizz_density_oSCR/Grizzly-Density-BC/Data_Prep/Data/conflict/BearHWCRs_2003to2021_Lamb.xlsx", sheet="2017-18")%>%
+  dplyr::select(Area,District,City,IncidentDateTime,NatureOfComplaint,Species_1))%>%
+  rbind(read_excel("/Users/clayton.lamb/Google Drive/Documents/University/U_A/Analyses/BC_Wide_PhD/Prov_Grizz_density_oSCR/Grizzly-Density-BC/Data_Prep/Data/conflict/BearHWCRs_2003to2021_Lamb.xlsx", sheet="2018-19")%>%
+  dplyr::select(Area,District,City,IncidentDateTime,NatureOfComplaint,Species_1))%>%
+  rbind(read_excel("/Users/clayton.lamb/Google Drive/Documents/University/U_A/Analyses/BC_Wide_PhD/Prov_Grizz_density_oSCR/Grizzly-Density-BC/Data_Prep/Data/conflict/BearHWCRs_2003to2021_Lamb.xlsx", sheet="2019-20")%>%
+  dplyr::select(Area,District,City,IncidentDateTime,NatureOfComplaint,Species_1))%>%
+  rbind(read_excel("/Users/clayton.lamb/Google Drive/Documents/University/U_A/Analyses/BC_Wide_PhD/Prov_Grizz_density_oSCR/Grizzly-Density-BC/Data_Prep/Data/conflict/BearHWCRs_2003to2021_Lamb.xlsx", sheet="2014-15")%>%
+  dplyr::select(Area,District,City,IncidentDateTime,NatureOfComplaint,Species_1))%>%
+  rbind(read_excel("/Users/clayton.lamb/Google Drive/Documents/University/U_A/Analyses/BC_Wide_PhD/Prov_Grizz_density_oSCR/Grizzly-Density-BC/Data_Prep/Data/conflict/BearHWCRs_2003to2021_Lamb.xlsx", sheet="2013-14")%>%
+  dplyr::select(Area,District,City,IncidentDateTime,NatureOfComplaint,Species_1))%>%
+  rbind(read_excel("/Users/clayton.lamb/Google Drive/Documents/University/U_A/Analyses/BC_Wide_PhD/Prov_Grizz_density_oSCR/Grizzly-Density-BC/Data_Prep/Data/conflict/BearHWCRs_2003to2021_Lamb.xlsx", sheet="2020-21")%>%
+  dplyr::select(Area,District,City,IncidentDateTime,NatureOfComplaint,Species_1))
+
+
+##get rid of sightings?
+# df<-df%>%
+#   filter(!enctype_name%in%c("SIGHTINGS","COUGAR/GRIZZLY"))
+# unique(df$enctype_name)
+
+##keep only grizz
+conf <- conf%>%
+  filter(Species_1%in%c("GRIZZLY BEAR", "BLACK BEAR"))
+
+######How many complaints/year
+conf$Year <- year(conf$IncidentDateTime%>%ymd_hms)
+conf$Month <- month(conf$IncidentDateTime%>%ymd_hms)
+conf%>%group_by(Year,Species_1)%>%summarise(n())
+
+##get rid of 2021, incomplete year
+conf<-conf%>%
+  filter(Year<2021 & Year>2000)
+
+##keep local towns and drop sightings
+conf.local <- conf%>%
+  filter(Area%in%c("ELKO", "FERNIE", "HOSMER","SPARWOOD", "ELKFORD","JAFFRAY") &
+           !NatureOfComplaint %in% "SIGHTINGS")
+
+conf.local%>%
+  group_by(Year,Area,Species_1)%>%
+  summarise(n=n())%>%
+  ggplot(aes(x=Year,y=n,color=Area))+
+  geom_line()+
+  facet_wrap(vars(Species_1))
+```
+
+![](README_files/figure-gfm/conflicts-1.png)<!-- -->
+
+``` r
+conf.local%>%
+  group_by(Year,Species_1)%>%
+  summarise(n=n())%>%
+  ggplot(aes(x=Year,y=n))+
+  geom_line()+
+  facet_wrap(vars(Species_1))
+```
+
+![](README_files/figure-gfm/conflicts-2.png)<!-- -->
+
+``` r
+conf.local%>%
+  filter(Year>2015)%>%
+  group_by(Year,Species_1)%>%
+  summarise(n=n())%>%
+  ggplot(aes(x=Year,y=n, color=Species_1))+
+  geom_line()
+```
+
+![](README_files/figure-gfm/conflicts-3.png)<!-- -->
+
+``` r
+conf.local%>%
+  filter(Year>2015)%>%
+      filter(Area%in%c("ELKO", "FERNIE", "HOSMER","SPARWOOD", "ELKFORD","JAFFRAY"))%>%
+      mutate(period=case_when(IncidentDateTime<ymd("2019-08-15")~"Before",
+                              IncidentDateTime>=ymd("2019-08-15")~"After"))%>%
+  group_by(period,Area,Species_1)%>%
+  summarise(n=n())%>%
+  mutate(rate=case_when(period=="Before"~n/3.5,
+                        period=="After"~n/1.5))%>%
+  group_by(period,Species_1)%>%
+  summarise(mean=mean(rate))
+
+
+conf.local%>%
+  filter(Year>2015)%>%
+      filter(Area%in%c("ELKO", "FERNIE", "HOSMER","SPARWOOD", "ELKFORD","JAFFRAY"))%>%
+      mutate(period=case_when(IncidentDateTime<ymd("2019-08-15")~"Before",
+                              IncidentDateTime>=ymd("2019-08-15")~"After"))%>%
+  group_by(period,Area,Species_1)%>%
+  summarise(n=n())%>%
+  mutate(rate=case_when(period=="Before"~n/3.5,
+                        period=="After"~n/1.5))%>%
+  group_by(period,Species_1)%>%
+  summarise(mean=median(rate))
+
+conf.local%>%
+  filter(Year>2015)%>%
+      filter(Area%in%c("ELKO", "FERNIE", "HOSMER","SPARWOOD", "ELKFORD","JAFFRAY"))%>%
+      mutate(period=case_when(IncidentDateTime<ymd("2019-08-15")~"Before",
+                              IncidentDateTime>=ymd("2019-08-15")~"After"))%>%
+  group_by(period,Area,Species_1)%>%
+  summarise(n=n())%>%
+  mutate(rate=case_when(period=="Before"~n/3.5,
+                        period=="After"~n/1.5))%>%
+ggplot(aes(x=fct_relevel(period,"Before", "After"),y=rate,color=Area, group=Area))+
+  geom_point()+
+  geom_line()+
+  facet_wrap(vars(Species_1))
+```
+
+![](README_files/figure-gfm/conflicts-4.png)<!-- -->
+
+``` r
+conf.local%>%
+  filter(Year>2015)%>%
+      filter(Area%in%c("ELKO", "FERNIE", "HOSMER","SPARWOOD", "ELKFORD","JAFFRAY"))%>%
+      mutate(period=case_when(IncidentDateTime<ymd("2019-08-15")~"Before",
+                              IncidentDateTime>=ymd("2019-08-15")~"After"))%>%
+  group_by(period,Area,Species_1)%>%
+  summarise(rate=n()/n_distinct(Year))%>%
+ggplot(aes(x=fct_relevel(period,"Before", "After"),y=rate,color=Area, group=Area))+
+  geom_point()+
+  geom_line()+
+  facet_wrap(vars(Species_1))
+```
+
+![](README_files/figure-gfm/conflicts-5.png)<!-- -->
+
+``` r
+conf.local%>%
+  filter(Year>2015)%>%
+      filter(Area%in%c("ELKO", "FERNIE", "HOSMER","SPARWOOD", "ELKFORD","JAFFRAY"))%>%
+      mutate(period=case_when(IncidentDateTime<ymd("2019-08-15")~"Before",
+                              IncidentDateTime>=ymd("2019-08-15")~"After"))%>%
+  group_by(period,Area,Species_1)%>%
+  summarise(rate=n()/n_distinct(Year))%>%
+ggplot(aes(x=fct_relevel(period,"Before", "After"),y=rate,color=Area, group=Area))+
+  geom_point()+
+  geom_line()
+```
+
+![](README_files/figure-gfm/conflicts-6.png)<!-- -->
+
+## Closer to people before/after
+
+``` r
+humdens <- raster("/Users/clayton.lamb/Google Drive/Documents/University/U_A/Analyses/BC_Wide_PhD/Prov_Grizz_density_oSCR/Data_Prep/Spatial_Layers_ProvSECR/human_density/hum_density.tif")
+
+ev.grizz%>%
+  tibble%>%
+  mutate(period=case_when(datetime<ymd("2019-08-15")~"Before",
+                          datetime>=ymd("2019-08-15")~"After"))%>%
+  group_by(id, period)%>%
+  summarise(n=n())%>%
+  pivot_wider(id_cols = c("id"), 
+              names_from="period",
+              values_from=c("n"))%>%
+ drop_na(After,Before)
+
+
+pre.post.males <- ev.grizz%>%
+  filter(id%in%c("Chandler","Gums"))%>%
+  st_buffer(1000)%>%
+  mutate(hum_dens=velox(humdens)$extract(., fun=median))%>%
+  tibble%>%
+    mutate(period=case_when(datetime<ymd("2019-08-15")~"Before",
+                          datetime>=ymd("2019-08-15")~"After"))
+
+#sqrt [ p ( 1 - p) / n]
+pre.post.males%>%
+  mutate(month=month(datetime),
+         humocc=case_when(hum_dens>1~1,TRUE~0))%>%
+  group_by(id,period,month)%>%
+    summarise(mean=100*(sum(humocc)/n()),
+              se=100*(sqrt((sum(humocc)/n())*(1-(sum(humocc)/n()))/n())),
+              n=n())%>%
+  arrange(id,period,month)%>%
+  ggplot(aes(x=month,y=mean,color=fct_relevel(period,"Before", "After"), group=fct_relevel(period,"Before", "After")))+
+  geom_point()+
+  geom_linerange(aes(ymin=mean-se,ymax=mean+se))+
+  facet_wrap(vars(id))+
+    theme_ipsum()+
+  labs(x="",y="Locations (%)", title="Proportion of locations near people", color="Period")+
+  theme(axis.title.x = element_text(size=15),
+        axis.title.y = element_text(size=15),
+        axis.text = element_text(size=10),
+        legend.text = element_text(size=13),
+        legend.title=element_text(size=15))
+```
+
+![](README_files/figure-gfm/closer-1.png)<!-- -->
