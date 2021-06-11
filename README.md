@@ -1,10 +1,12 @@
 Roadkill Carcass Attraction of Large Carnivores and Solutions
 ================
 Clayton Lamb
-31 May, 2021
+11 June, 2021
 
 \#\#\#\#\#WATCH FOR BEFORE AFTER COMPARISONS THAT ARE MORESO ELKO VS
-ALEX, NOT AS MUCH ELKO BEFORE/AFTER
+ALEX, NOT AS MUCH ELKO BEFORE/AFTER \#\#\#\#\#WATCH FOR DENNING AND
+IMMEDIATELY AFTER CAPTURE LOCS \#\#\#\#\#PROBABLY NEED TO CLEAN CONFLICT
+DATA, AND SEE IF SPARWOOD 2019 SPIKE IS AMYS CUB?
 
 # Test for Attraction of Large Carnivores to cameras at pits vs bunkers
 
@@ -220,7 +222,7 @@ tif%>%
 
 ``` r
 ###grizz
-ev.grizz <- read.csv(here::here("data","EVcollar_Relocs.csv"))
+ev.grizz <- read.csv(here::here("data","EVcollar_Relocs_raw.csv"))
 
 
 ##pits
@@ -308,7 +310,7 @@ df <-tibble()
 for(i in 1:length(animalyrs)){
   bear.i <- ev.grizz%>%filter(id_yr%in%animalyrs[i])%>%as("Spatial")
   year <- str_sub(bear.i$id_yr,-4,-1)[1]%>%as.numeric()
-  mcp <- mcp(bear.i%>%as("SpatialPoints"), percent=99)%>%
+  mcp <- mcp(bear.i%>%as("SpatialPoints"), percent=95)%>%
     st_as_sf()
 
   uncont <- ifelse(nrow(st_intersection(pit.uncontrolled.hwy,mcp))>0,
@@ -359,7 +361,8 @@ df.uncont <- df%>%
          year=str_sub(id_yr,-4,-1),
          id=str_split(id_yr,"_", simplify=TRUE)[,1])%>%
   mutate(period=case_when(year<2019~"Before",
-                          year>=2019~"After"))
+                          year>=2019~"After"),
+         use=uncont.use)
 
 
 ggplot(df.uncont, aes(x=id, y=s))+
@@ -381,6 +384,9 @@ df.cont <- df%>%
   mutate(s=case_when(year%in%c(2015:2018,2021:2022)~(cont.use.elko+cont.use.alex)/(cont.elko+cont.alex),
                      cont.alex>0 & year%in%c(2019:2020)~ cont.use.alex/cont.alex,
                      cont.elko>0 & year%in%c(2019:2020)~ cont.use.elko/cont.elko),
+         use=case_when(year%in%c(2015:2018,2021:2022)~(cont.use.elko+cont.use.alex),
+                     cont.alex>0 & year%in%c(2019:2020)~ cont.use.alex,
+                     cont.elko>0 & year%in%c(2019:2020)~ cont.use.elko),
          period=case_when(year%in%c(2015:2018)~"Before",
                          year%in%c(2021:2022)~"After",
                          cont.alex>0 & year%in%c(2019:2020)~"Before",
@@ -404,34 +410,37 @@ ggplot(df.cont, aes(x=id, y=s))+
 
 ``` r
 df.uncont%>%
-  mutate(group="Uncontrolled")%>%
+  mutate(group="Uncontrolled",s=s+1)%>%
   group_by(period, group)%>%
   summarise(mean=median(s,na.rm=TRUE),
-            se=sd(s)/sqrt(n()))%>%
+            se=sd(s)/sqrt(n()),
+            lwr=quantile(s,0.9,na.rm=TRUE),
+            upr=quantile(s,0.1,na.rm=TRUE))%>%
   rbind(df.cont%>%
-      mutate(group="Controlled")%>%
+      mutate(group="Controlled",s=s+1)%>%
       group_by(period, group)%>%
       summarise(mean=mean(s,na.rm=TRUE),
-                se=sd(s)/sqrt(n())))%>%
-  mutate(lower=case_when(mean-se>0.05~mean-se, TRUE~0.05))%>%
+                se=sd(s)/sqrt(n()),
+            lwr=quantile(s,0.9,na.rm=TRUE),
+            upr=quantile(s,0.1,na.rm=TRUE)))%>%
   ungroup%>%
   ggplot(aes(x=fct_relevel(period,"Before", "After"),y=log(mean), group=group))+
       # Shade area under y_lim
-  geom_rect(aes(xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = 0),
+  geom_rect(aes(xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = log(2)),
             alpha = 1/8,
             fill = "forestgreen") +
   # Shade area above y_lim
-  geom_rect(aes(xmin = -Inf, xmax = Inf, ymin = 0, ymax = Inf),
+  geom_rect(aes(xmin = -Inf, xmax = Inf, ymin = log(2), ymax = Inf),
             alpha = 1/8,
             fill = "red")+
-  annotate("text", x = "After", y = 0.2, label = "Select", hjust = -0.35)+
-  annotate("text", x = "After", y = -0.2, label = "Avoid", hjust = -0.45)+
-  geom_linerange(aes(ymin=log(lower), ymax=log(mean+se)))+
+  annotate("text", x = "After", y = 0.2, label = "Select", hjust = -0.45,size=3)+
+  annotate("text", x = "After", y = -0.2, label = "Avoid", hjust = -0.55,size=3)+
+  geom_linerange(aes(ymin=log(lwr), ymax=log(upr)))+
   geom_point()+
   geom_line(linetype="dashed")+
   facet_grid(cols=vars(fct_relevel(group, "Uncontrolled", "Controlled")))+
   theme_ipsum()+
-  geom_hline(yintercept = 0)+
+  geom_hline(yintercept = log(2))+
   labs(x="",y="Selection ratio (log)", title="Grizzly Bear Selection for Carcass Pits")+
   theme(axis.title.x = element_text(size=15),
         axis.title.y = element_text(size=15),
@@ -443,8 +452,69 @@ df.uncont%>%
 ![](README_files/figure-gfm/plot%20selection-1.png)<!-- -->
 
 ``` r
-ggsave(here::here("plots","selection.png"), height=5,width=5)
+ggsave(here::here("plots","selection.png"), height=5,width=6)
+
+
+
+df.uncont%>%
+  mutate(group="Uncontrolled")%>%
+  group_by(period, group)%>%
+  summarise(mean=mean(s>1,na.rm=TRUE))%>%
+  rbind(df.cont%>%
+      mutate(group="Controlled")%>%
+      group_by(period, group)%>%
+    summarise(mean=mean(s>1,na.rm=TRUE)))
+
+
+df.uncont%>%
+  mutate(group="Uncontrolled")%>%
+  dplyr::select(period,group,use)%>%
+  rbind(df.cont%>%
+      mutate(group="Controlled")%>%
+       dplyr::select(period,group,use))%>%
+      group_by(period, group)%>%
+  summarise(mean=mean(use,na.rm=TRUE),
+            se=sd(use)/sqrt(n()),
+            lwr=quantile(use,0.9,na.rm=TRUE),
+            upr=quantile(use,0.1,na.rm=TRUE))%>%
+  ungroup%>%
+  ggplot(aes(x=fct_relevel(period,"Before", "After"),y=mean*100, group=group))+
+  geom_linerange(aes(ymin=(mean-se)*100, ymax=(mean+se)*100))+
+  geom_point()+
+  geom_line(linetype="dashed")+
+  facet_grid(cols=vars(fct_relevel(group, "Uncontrolled", "Controlled")))+
+  theme_ipsum()+
+  labs(x="",y="Locations (%)", title="Grizzly Bear Use of Carcass Pits")+
+  theme(axis.title.x = element_text(size=15),
+        axis.title.y = element_text(size=15),
+        axis.text = element_text(size=10),
+        legend.text = element_text(size=13),
+        legend.title=element_text(size=15))
 ```
+
+![](README_files/figure-gfm/plot%20selection-2.png)<!-- -->
+
+``` r
+df.uncont%>%
+  mutate(group="Uncontrolled")%>%
+  dplyr::select(period,group,use)%>%
+  rbind(df.cont%>%
+      mutate(group="Controlled")%>%
+       dplyr::select(period,group,use))%>%
+  ungroup%>%
+  ggplot(aes(x=fct_relevel(period,"Before", "After"),y=use*100, group=period, fill=group))+
+  geom_boxplot()+
+  facet_grid(cols=vars(fct_relevel(group, "Uncontrolled", "Controlled")))+
+  theme_ipsum()+
+  labs(x="",y="Locations (%)", title="Grizzly Bear Use of Carcass Pits")+
+  theme(axis.title.x = element_text(size=15),
+        axis.title.y = element_text(size=15),
+        axis.text = element_text(size=10),
+        legend.text = element_text(size=13),
+        legend.title=element_text(size=15))
+```
+
+![](README_files/figure-gfm/plot%20selection-3.png)<!-- -->
 
 ## Body condition before/after
 
@@ -517,10 +587,10 @@ model.sel(m1,m2,m3,m4)
 
     ## Model selection table 
     ##      (Int) age_asy sex     ydy grp             family df   logLik  AICc delta weight
-    ## m2  25.940   12.14   +             gaussian(identity)  4 -367.456 743.5  0.00  0.429
-    ## m3   5.945   12.27   + 0.08181     gaussian(identity)  5 -366.489 743.8  0.35  0.359
-    ## m4  23.760   12.16   +           + gaussian(identity)  5 -367.013 744.9  1.40  0.213
-    ## m1 140.700                         gaussian(identity)  2 -414.303 832.8 89.30  0.000
+    ## m4  22.770   12.06   +           + gaussian(identity)  5 -366.006 742.9  0.00  0.425
+    ## m2  25.940   12.14   +             gaussian(identity)  4 -367.456 743.5  0.61  0.313
+    ## m3   5.945   12.27   + 0.08181     gaussian(identity)  5 -366.489 743.8  0.97  0.262
+    ## m1 140.700                         gaussian(identity)  2 -414.303 832.8 89.91  0.000
     ## Models ranked by AICc(x)
 
 ``` r
@@ -533,23 +603,23 @@ summary(m4)
     ## 
     ## Deviance Residuals: 
     ##     Min       1Q   Median       3Q      Max  
-    ## -57.803  -19.159   -7.119   21.316   60.881  
+    ## -50.060  -17.334   -3.337   18.477   62.715  
     ## 
     ## Coefficients:
     ##             Estimate Std. Error t value             Pr(>|t|)    
-    ## (Intercept)   23.757      9.957   2.386               0.0196 *  
-    ## groupPits      6.308      6.856   0.920               0.3606    
-    ## age_asympt    12.156      1.175  10.347 0.000000000000000583 ***
-    ## sexM          62.804      6.838   9.184 0.000000000000084124 ***
+    ## (Intercept)   22.774      9.730   2.341               0.0220 *  
+    ## groupPits     11.407      6.813   1.674               0.0983 .  
+    ## age_asympt    12.056      1.161  10.388 0.000000000000000492 ***
+    ## sexM          62.948      6.654   9.460 0.000000000000025683 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## (Dispersion parameter for gaussian family taken to be 852.5762)
+    ## (Dispersion parameter for gaussian family taken to be 830.565)
     ## 
     ##     Null deviance: 212574  on 76  degrees of freedom
-    ## Residual deviance:  62238  on 73  degrees of freedom
+    ## Residual deviance:  60631  on 73  degrees of freedom
     ##   (8 observations deleted due to missingness)
-    ## AIC: 744.03
+    ## AIC: 742.01
     ## 
     ## Number of Fisher Scoring iterations: 2
 
@@ -563,9 +633,9 @@ model.sel(m1,m2,m3)
 
     ## Model selection table 
     ##    (Int) age_asy sex grp             family df   logLik  AICc delta weight
-    ## m1 24.36                 gaussian(identity)  2 -203.591 411.4  0.00  0.761
-    ## m2 21.33  0.3142   +     gaussian(identity)  4 -202.765 414.2  2.86  0.183
-    ## m3 21.22  0.3179   +   + gaussian(identity)  5 -202.755 416.6  5.21  0.056
+    ## m1 24.36                 gaussian(identity)  2 -203.591 411.4  0.00   0.75
+    ## m2 21.33  0.3142   +     gaussian(identity)  4 -202.765 414.2  2.86   0.18
+    ## m3 20.92  0.3162   +   + gaussian(identity)  5 -202.524 416.1  4.75   0.07
     ## Models ranked by AICc(x)
 
 ``` r
@@ -578,23 +648,23 @@ summary(m3)
     ## 
     ## Deviance Residuals: 
     ##     Min       1Q   Median       3Q      Max  
-    ## -18.104   -4.038    1.341    4.276   13.093  
+    ## -17.424   -4.585    1.086    4.335   13.530  
     ## 
     ## Coefficients:
     ##             Estimate Std. Error t value       Pr(>|t|)    
-    ## (Intercept)  21.2185     2.8712   7.390 0.000000000712 ***
-    ## groupPits     0.2540     1.8544   0.137          0.892    
-    ## age_asympt    0.3179     0.3370   0.943          0.349    
-    ## sexM          1.6679     1.8507   0.901          0.371    
+    ## (Intercept)  20.9153     2.8154   7.429 0.000000000614 ***
+    ## groupPits     1.2333     1.8350   0.672          0.504    
+    ## age_asympt    0.3162     0.3346   0.945          0.349    
+    ## sexM          1.5509     1.8120   0.856          0.396    
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## (Dispersion parameter for gaussian family taken to be 48.31085)
+    ## (Dispersion parameter for gaussian family taken to be 47.94679)
     ## 
     ##     Null deviance: 2830.2  on 60  degrees of freedom
-    ## Residual deviance: 2753.7  on 57  degrees of freedom
+    ## Residual deviance: 2733.0  on 57  degrees of freedom
     ##   (24 observations deleted due to missingness)
-    ## AIC: 415.51
+    ## AIC: 415.05
     ## 
     ## Number of Fisher Scoring iterations: 2
 

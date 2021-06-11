@@ -8,8 +8,7 @@ output: github_document
 
 #####WATCH FOR BEFORE AFTER COMPARISONS THAT ARE MORESO ELKO VS ALEX, NOT AS MUCH ELKO BEFORE/AFTER
 #####WATCH FOR DENNING AND IMMEDIATELY AFTER CAPTURE LOCS
-
-
+#####PROBABLY NEED TO CLEAN CONFLICT DATA, AND SEE IF SPARWOOD 2019 SPIKE IS AMYS CUB?
 
 ```{r render, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE, results='hide'}
 rmarkdown::render(here::here('CarcassAttraction.Rmd'),
@@ -220,7 +219,7 @@ tif%>%
 ## Load Data
 ```{r Load packages and data, results='hide', message=FALSE, warning=FALSE}
 ###grizz
-ev.grizz <- read.csv(here::here("data","EVcollar_Relocs.csv"))
+ev.grizz <- read.csv(here::here("data","EVcollar_Relocs_raw.csv"))
 
 
 ##pits
@@ -308,7 +307,7 @@ df <-tibble()
 for(i in 1:length(animalyrs)){
   bear.i <- ev.grizz%>%filter(id_yr%in%animalyrs[i])%>%as("Spatial")
   year <- str_sub(bear.i$id_yr,-4,-1)[1]%>%as.numeric()
-  mcp <- mcp(bear.i%>%as("SpatialPoints"), percent=99)%>%
+  mcp <- mcp(bear.i%>%as("SpatialPoints"), percent=95)%>%
     st_as_sf()
 
   uncont <- ifelse(nrow(st_intersection(pit.uncontrolled.hwy,mcp))>0,
@@ -359,7 +358,8 @@ df.uncont <- df%>%
          year=str_sub(id_yr,-4,-1),
          id=str_split(id_yr,"_", simplify=TRUE)[,1])%>%
   mutate(period=case_when(year<2019~"Before",
-                          year>=2019~"After"))
+                          year>=2019~"After"),
+         use=uncont.use)
 
 
 ggplot(df.uncont, aes(x=id, y=s))+
@@ -378,6 +378,9 @@ df.cont <- df%>%
   mutate(s=case_when(year%in%c(2015:2018,2021:2022)~(cont.use.elko+cont.use.alex)/(cont.elko+cont.alex),
                      cont.alex>0 & year%in%c(2019:2020)~ cont.use.alex/cont.alex,
                      cont.elko>0 & year%in%c(2019:2020)~ cont.use.elko/cont.elko),
+         use=case_when(year%in%c(2015:2018,2021:2022)~(cont.use.elko+cont.use.alex),
+                     cont.alex>0 & year%in%c(2019:2020)~ cont.use.alex,
+                     cont.elko>0 & year%in%c(2019:2020)~ cont.use.elko),
          period=case_when(year%in%c(2015:2018)~"Before",
                          year%in%c(2021:2022)~"After",
                          cont.alex>0 & year%in%c(2019:2020)~"Before",
@@ -398,34 +401,37 @@ ggplot(df.cont, aes(x=id, y=s))+
 ## Plot
 ```{r plot selection, message=FALSE, warning=FALSE}
 df.uncont%>%
-  mutate(group="Uncontrolled")%>%
+  mutate(group="Uncontrolled",s=s+1)%>%
   group_by(period, group)%>%
   summarise(mean=median(s,na.rm=TRUE),
-            se=sd(s)/sqrt(n()))%>%
+            se=sd(s)/sqrt(n()),
+            lwr=quantile(s,0.9,na.rm=TRUE),
+            upr=quantile(s,0.1,na.rm=TRUE))%>%
   rbind(df.cont%>%
-      mutate(group="Controlled")%>%
+      mutate(group="Controlled",s=s+1)%>%
       group_by(period, group)%>%
       summarise(mean=mean(s,na.rm=TRUE),
-                se=sd(s)/sqrt(n())))%>%
-  mutate(lower=case_when(mean-se>0.05~mean-se, TRUE~0.05))%>%
+                se=sd(s)/sqrt(n()),
+            lwr=quantile(s,0.9,na.rm=TRUE),
+            upr=quantile(s,0.1,na.rm=TRUE)))%>%
   ungroup%>%
   ggplot(aes(x=fct_relevel(period,"Before", "After"),y=log(mean), group=group))+
       # Shade area under y_lim
-  geom_rect(aes(xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = 0),
+  geom_rect(aes(xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = log(2)),
             alpha = 1/8,
             fill = "forestgreen") +
   # Shade area above y_lim
-  geom_rect(aes(xmin = -Inf, xmax = Inf, ymin = 0, ymax = Inf),
+  geom_rect(aes(xmin = -Inf, xmax = Inf, ymin = log(2), ymax = Inf),
             alpha = 1/8,
             fill = "red")+
-  annotate("text", x = "After", y = 0.2, label = "Select", hjust = -0.35)+
-  annotate("text", x = "After", y = -0.2, label = "Avoid", hjust = -0.45)+
-  geom_linerange(aes(ymin=log(lower), ymax=log(mean+se)))+
+  annotate("text", x = "After", y = 0.2, label = "Select", hjust = -0.45,size=3)+
+  annotate("text", x = "After", y = -0.2, label = "Avoid", hjust = -0.55,size=3)+
+  geom_linerange(aes(ymin=log(lwr), ymax=log(upr)))+
   geom_point()+
   geom_line(linetype="dashed")+
   facet_grid(cols=vars(fct_relevel(group, "Uncontrolled", "Controlled")))+
   theme_ipsum()+
-  geom_hline(yintercept = 0)+
+  geom_hline(yintercept = log(2))+
   labs(x="",y="Selection ratio (log)", title="Grizzly Bear Selection for Carcass Pits")+
   theme(axis.title.x = element_text(size=15),
         axis.title.y = element_text(size=15),
@@ -435,7 +441,64 @@ df.uncont%>%
 
 
 
-ggsave(here::here("plots","selection.png"), height=5,width=5)
+ggsave(here::here("plots","selection.png"), height=5,width=6)
+
+
+
+df.uncont%>%
+  mutate(group="Uncontrolled")%>%
+  group_by(period, group)%>%
+  summarise(mean=mean(s>1,na.rm=TRUE))%>%
+  rbind(df.cont%>%
+      mutate(group="Controlled")%>%
+      group_by(period, group)%>%
+    summarise(mean=mean(s>1,na.rm=TRUE)))
+
+
+df.uncont%>%
+  mutate(group="Uncontrolled")%>%
+  dplyr::select(period,group,use)%>%
+  rbind(df.cont%>%
+      mutate(group="Controlled")%>%
+       dplyr::select(period,group,use))%>%
+      group_by(period, group)%>%
+  summarise(mean=mean(use,na.rm=TRUE),
+            se=sd(use)/sqrt(n()),
+            lwr=quantile(use,0.9,na.rm=TRUE),
+            upr=quantile(use,0.1,na.rm=TRUE))%>%
+  ungroup%>%
+  ggplot(aes(x=fct_relevel(period,"Before", "After"),y=mean*100, group=group))+
+  geom_linerange(aes(ymin=(mean-se)*100, ymax=(mean+se)*100))+
+  geom_point()+
+  geom_line(linetype="dashed")+
+  facet_grid(cols=vars(fct_relevel(group, "Uncontrolled", "Controlled")))+
+  theme_ipsum()+
+  labs(x="",y="Locations (%)", title="Grizzly Bear Use of Carcass Pits")+
+  theme(axis.title.x = element_text(size=15),
+        axis.title.y = element_text(size=15),
+        axis.text = element_text(size=10),
+        legend.text = element_text(size=13),
+        legend.title=element_text(size=15))
+
+
+df.uncont%>%
+  mutate(group="Uncontrolled")%>%
+  dplyr::select(period,group,use)%>%
+  rbind(df.cont%>%
+      mutate(group="Controlled")%>%
+       dplyr::select(period,group,use))%>%
+  ungroup%>%
+  ggplot(aes(x=fct_relevel(period,"Before", "After"),y=use*100, group=period, fill=group))+
+  geom_boxplot()+
+  facet_grid(cols=vars(fct_relevel(group, "Uncontrolled", "Controlled")))+
+  theme_ipsum()+
+  labs(x="",y="Locations (%)", title="Grizzly Bear Use of Carcass Pits")+
+  theme(axis.title.x = element_text(size=15),
+        axis.title.y = element_text(size=15),
+        axis.text = element_text(size=10),
+        legend.text = element_text(size=13),
+        legend.title=element_text(size=15))
+  
 ```
  
 ## Body condition before/after
